@@ -17,6 +17,7 @@
     <div class="fabric">
       <canvas ref="canvasRef" width="300" height="300"/>
       <button @click="clearCanvas">지우기</button>
+      <button @click="addNewBox">사각형</button>
     </div>
   </div>
 </template>
@@ -39,17 +40,18 @@ export default {
     // 캔버스에 그려진 그림 객체를 가져와서 콘솔에 출력하는 함수
     const printCanvasObjects = () => {
       // Fabric.js에서 제공하는 canvas.toObject(): 캔버스에 그려진 객체들의 상태를 JSON 형식으로 가져온다.
-      let canvasObj = JSON.stringify(canvas.toObject());
-      console.log("캔버스에 그려진 객체:", canvasObj);
+      // let canvasObj = JSON.stringify(canvas.toDatalessJSON());
+      let canvasObj = canvas.toDataURL({
+        format: 'png',
+        quality: 1.0
+      });
+      console.log("캔버스에 그려진 객체(Base64):", canvasObj);
 
       this.send(canvasObj);
-
-      // JSON 문자열로 변환하여 출력
-      // console.log("캔버스에 그려진 객체(JSON 형식):", JSON.stringify(objects));
     };
 
     // 캔버스에 그림이 그려질 때마다 호출되는 이벤트 핸들러
-    canvas.on("path:created", () => {
+    canvas.on("mouse:up", () => {
       // 그림이 그려질 때마다 객체 출력
       printCanvasObjects();
     });
@@ -68,16 +70,48 @@ export default {
     this.connect();
   },
   methods: {
+    addNewBox(){
+      this.count = this.count+10;
+      // 새로운 도형의 정보
+      const rect = new fabric.Rect({
+        top: 0,
+        left: this.count,
+        width:500,
+        height:500,
+        fill:"#f3f345",
+        corner: 100,
+        angle:360,  // 기울기 고정점
+        borderColor:"#3845ff",   // 선택시 테두리 색깔 표시
+        cornerColor:"#000000",    // 코너 색깔 조절 툴
+        cornerSize:8,             // 코너 크기 조절 툴
+      })
+      this.canvas.add(rect);
+      // setActiveObject 지금 추가한 객체를 선택한 상태로 만든다.
+      this.canvas.setActiveObject(rect);
+      this.canvas.isDrawingMode = false;
+    },
     // 캔버스에 그림을 그리는 메서드
     drawReceivedCanvasObj(canvasObj) {
       // canvasObj를 JSON 문자열에서 JavaScript 객체로 변환
-      const parsedCanvasObj = JSON.parse(canvasObj);
+      // const parsedCanvasObj = JSON.parse(canvasObj);
+
+      // canvasObj를 base64에서 canvas 출력 데이터로 변환
+      const image = new Image();
+      image.onload = () => {
+        // Create a fabric image instance from the loaded image
+        const imgInstance = new fabric.Image(image);
+        // Add the image to the canvas
+        this.canvas.add(imgInstance);
+        this.canvas.renderAll();
+      };
+
+      image.src = canvasObj;
 
       // Fabric.js의 loadFromJSON 메서드를 사용하여 캔버스에 그림을 로드합니다.
-      this.canvas.loadFromJSON(parsedCanvasObj, () => {
-        // 그림이 로드된 후에 필요한 작업을 수행할 수 있습니다.
-        this.canvas.renderAll();
-      });
+      // this.canvas.loadFromJSON(parsedCanvasObj, () => {
+      //   // 그림이 로드된 후에 필요한 작업을 수행할 수 있습니다.
+      //   this.canvas.renderAll();
+      // });
     },
     clearCanvas() {
       this.canvas.clear(); // 캔버스를 지웁니다.
@@ -89,7 +123,6 @@ export default {
       }
     },
     send(canvasObj) {
-      console.log("뭐지 ??? 왜 ???", canvasObj);
       if (this.stompClient && this.stompClient.connected) {
         const msg = {
           // VO의 필드명과 동일하게 지정 필요
@@ -119,8 +152,6 @@ export default {
               // 받은 데이터를 json으로 파싱하고 리스트에 넣어줍니다.
               this.recvList.push(JSON.parse(res.body));
               console.log("recvList 내용", this.recvList);
-
-              console.log("recvList 내용 보는 거야 !!!!", this.recvList[this.recvList.length - 1].canvasObj);
 
               // 캔버스에 받은 데이터를 그립니다.
               this.drawReceivedCanvasObj(this.recvList[this.recvList.length - 1].canvasObj);
