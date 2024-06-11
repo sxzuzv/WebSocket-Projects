@@ -10,11 +10,10 @@ public class WebSocketController {
     @MessageMapping("/receive")
     @SendTo("/send")
     public SocketVO SocketHandler(SocketVO socketVO) {
-        String userName = socketVO.getUserName();
-        String content = socketVO.getContent();
         Object canvasObj = socketVO.getCanvasObj();
+        String action = socketVO.getAction();
 
-        SocketVO result = new SocketVO(userName, content, canvasObj);
+        SocketVO result = new SocketVO(canvasObj, action);
 
         return result;
     }

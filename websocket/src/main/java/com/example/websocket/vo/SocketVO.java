@@ -10,7 +10,6 @@ import lombok.Setter;
 @AllArgsConstructor
 @NoArgsConstructor
 public class SocketVO {
-    private String userName;    // 유저명
-    private String content;     // 메시지 내용
     private Object canvasObj;   // 그리기 내용
+    private String action;
 }
