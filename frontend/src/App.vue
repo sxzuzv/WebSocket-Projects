@@ -25,9 +25,14 @@ export default {
     this.canvas = canvas;
 
     // 캔버스에 그림이 그려질 때마다 호출되는 이벤트 핸들러
+    // canvas.on("mouse:up", () => {
+    //   // 그림이 그려질 때마다 객체 출력
+    //   this.printCanvasObjects();
+    // });
+
     canvas.on("mouse:up", () => {
-      // 그림이 그려질 때마다 객체 출력
-      this.printCanvasObjects();
+      // 객체가 추가될 때마다 객체 출력
+      this.printLatestObject();
     });
   },
 
@@ -46,20 +51,46 @@ export default {
   },
   methods: {
     // 캔버스에 그려진 그림 객체를 가져와서 콘솔에 출력하는 함수
-    printCanvasObjects () {
-      // Fabric.js에서 제공하는 canvas.toObject(): 캔버스에 그려진 객체들의 상태를 JSON 형식으로 가져온다.
-      // let canvasObj = JSON.stringify(canvas.toDatalessJSON());
-      let canvasObj = this.canvas.toDataURL({
-        format: 'png',
-        quality: 1.0
-      });
-      console.log("캔버스에 그려진 객체(Base64):", canvasObj);
+    // printCanvasObjects () {
+    //   // Fabric.js에서 제공하는 canvas.toObject(): 캔버스에 그려진 객체들의 상태를 JSON 형식으로 가져온다.
+    //   // let canvasObj = JSON.stringify(canvas.toDatalessJSON());
+    //   let canvasObj = this.canvas.toDataURL({
+    //     format: 'png',
+    //     quality: 1.0
+    //   });
+    //   console.log("캔버스에 그려진 객체(Base64):", canvasObj);
+    //
+    //   this.send(canvasObj);
+    // },
 
-      this.send(canvasObj);
+    printLatestObject () {
+      const lastObject = this.canvas.getObjects().slice(-1)[0];
+
+      if (lastObject) {
+        // 새로운 임시 캔버스 생성
+        const tempCanvas = new fabric.Canvas(null, {
+          width: lastObject.width,
+          height: lastObject.height
+        });
+
+        // 가장 최근의 객체를 임시 캔버스에 추가
+        tempCanvas.add(lastObject);
+
+        // 임시 캔버스를 PNG 이미지로 변환
+        const latestObjectPng = tempCanvas.toDataURL({
+          format: 'png',
+          quality: 1.0
+        });
+
+        console.log("가장 최근에 추가된 객체(Base64):", latestObjectPng);
+
+        this.send(latestObjectPng);
+      }
     },
 
     drawLine() {
       this.canvas.isDrawingMode = true;
+      this.printLatestObject();
     },
 
     // 도형(사각형) 그리기
@@ -69,13 +100,14 @@ export default {
       const rect = new fabric.Rect({
         top: 100,
         left: 100,
-        width: 50,
-        height: 50,
-        fill: "#f3f345"
+        width: 30,
+        height: 30,
+        fillUp: "black"
       });
 
       this.canvas.add(rect);
-      this.printCanvasObjects();
+      // this.printCanvasObjects();
+      this.printLatestObject();
     },
 
     // 전송받은 캔버스 데이터 출력
@@ -110,9 +142,6 @@ export default {
     send(canvasObj) {
       if (this.stompClient && this.stompClient.connected) {
         const msg = {
-          // VO의 필드명과 동일하게 지정 필요
-          // userName: this.userName,
-          // content: this.message,
           canvasObj: canvasObj
         };
         this.stompClient.send("/receive", JSON.stringify(msg), {});
