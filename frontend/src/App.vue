@@ -16,8 +16,8 @@
     </div>
     <div class="fabric">
       <canvas ref="canvasRef" width="300" height="300"/>
+      <button @click="drawSquare">사각형</button>
       <button @click="clearCanvas">지우기</button>
-      <button @click="addNewBox">사각형</button>
     </div>
   </div>
 </template>
@@ -70,25 +70,16 @@ export default {
     this.connect();
   },
   methods: {
-    addNewBox(){
-      this.count = this.count+10;
-      // 새로운 도형의 정보
+    // 도형(사각형) 그리기
+    drawSquare() {
       const rect = new fabric.Rect({
-        top: 0,
-        left: this.count,
-        width:500,
-        height:500,
-        fill:"#f3f345",
-        corner: 100,
-        angle:360,  // 기울기 고정점
-        borderColor:"#3845ff",   // 선택시 테두리 색깔 표시
-        cornerColor:"#000000",    // 코너 색깔 조절 툴
-        cornerSize:8,             // 코너 크기 조절 툴
-      })
-      this.canvas.add(rect);
-      // setActiveObject 지금 추가한 객체를 선택한 상태로 만든다.
-      this.canvas.setActiveObject(rect);
-      this.canvas.isDrawingMode = false;
+        top: 100,
+        left: 100,
+        width: 50,
+        height: 50,
+        fill: "#f3f345"
+      });
+      this.canvas.add(rect)
     },
     // 캔버스에 그림을 그리는 메서드
     drawReceivedCanvasObj(canvasObj) {
